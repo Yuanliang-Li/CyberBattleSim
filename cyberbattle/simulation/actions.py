@@ -87,7 +87,8 @@ class EdgeAnnotation(Enum):
 
 class ActionResult(NamedTuple):
     """Result from executing an action"""
-    reward: Reward
+    # reward: Reward
+    reward: list # added by Yuanliang
     outcome: Optional[model.VulnerabilityOutcome]
 
 
@@ -412,13 +413,17 @@ class AgentActions:
             if self._throws_on_invalid_actions:
                 raise ValueError("Agent does not owned the source node '" + node_id + "'")
             else:
-                return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                # return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                reward_list = [Penalty.INVALID_ACTION,Penalty.INVALID_ACTION,0,0]
+                return ActionResult(reward=reward_list, outcome=None)
 
         if target_node_id not in self._discovered_nodes:
             if self._throws_on_invalid_actions:
                 raise ValueError("Agent has not discovered the target node '" + target_node_id + "'")
             else:
-                return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                # return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                reward_list = [Penalty.INVALID_ACTION,Penalty.INVALID_ACTION,0,0]
+                return ActionResult(reward=reward_list, outcome=None)
 
         succeeded, result = self.__process_outcome(
             model.VulnerabilityType.REMOTE,
@@ -455,7 +460,9 @@ class AgentActions:
             if self._throws_on_invalid_actions:
                 raise ValueError(f"Agent does not owned the node '{node_id}'")
             else:
-                return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                # return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                reward_list = [Penalty.INVALID_ACTION, Penalty.INVALID_ACTION, 0, 0]
+                return ActionResult(reward=reward_list, outcome=None)
 
         succeeded, result = self.__process_outcome(
             model.VulnerabilityType.LOCAL,
@@ -514,55 +521,75 @@ class AgentActions:
             if self._throws_on_invalid_actions:
                 raise ValueError(f"Agent does not owned the source node '{source_node_id}'")
             else:
-                return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                # return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                reward_list = [Penalty.INVALID_ACTION, Penalty.INVALID_ACTION, 0, 0]
+                return ActionResult(reward=reward_list, outcome=None)
 
         if target_node_id not in self._discovered_nodes:
             if self._throws_on_invalid_actions:
                 raise ValueError(f"Agent has not discovered the target node '{target_node_id}'")
             else:
-                return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                # return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                reward_list = [Penalty.INVALID_ACTION, Penalty.INVALID_ACTION, 0, 0]
+                return ActionResult(reward=reward_list, outcome=None)
 
         if credential not in self._gathered_credentials:
             if self._throws_on_invalid_actions:
                 raise ValueError(f"Agent has not discovered credential '{credential}'")
             else:
-                return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                # return ActionResult(reward=Penalty.INVALID_ACTION, outcome=None)
+                reward_list = [Penalty.INVALID_ACTION, Penalty.INVALID_ACTION, 0, 0]
+                return ActionResult(reward=reward_list, outcome=None)
 
         if not self.__is_passing_firewall_rules(source_node.firewall.outgoing, port_name):
             logger.info(f"BLOCKED TRAFFIC: source node '{source_node_id}'" +
                         f" is blocking outgoing traffic on port '{port_name}'")
-            return ActionResult(reward=Penalty.BLOCKED_BY_LOCAL_FIREWALL,
-                                outcome=None)
+            # return ActionResult(reward=Penalty.BLOCKED_BY_LOCAL_FIREWALL,
+            #                     outcome=None)
+            reward_list = [Penalty.BLOCKED_BY_LOCAL_FIREWALL, Penalty.BLOCKED_BY_LOCAL_FIREWALL, 0, 0]
+            return ActionResult(reward=reward_list, outcome=None)
 
         if not self.__is_passing_firewall_rules(target_node.firewall.incoming, port_name):
             logger.info(f"BLOCKED TRAFFIC: target node '{target_node_id}'" +
                         f" is blocking outgoing traffic on port '{port_name}'")
-            return ActionResult(reward=Penalty.BLOCKED_BY_REMOTE_FIREWALL,
-                                outcome=None)
+            # return ActionResult(reward=Penalty.BLOCKED_BY_REMOTE_FIREWALL,
+            #                     outcome=None)
+            reward_list = [Penalty.BLOCKED_BY_REMOTE_FIREWALL, Penalty.BLOCKED_BY_REMOTE_FIREWALL, 0, 0]
+            return ActionResult(reward=reward_list, outcome=None)
 
         target_node_is_listening = port_name in [i.name for i in target_node.services]
         if not target_node_is_listening:
             logger.info(f"target node '{target_node_id}' not listening on port '{port_name}'")
-            return ActionResult(reward=Penalty.SCANNING_UNOPEN_PORT,
-                                outcome=None)
+            # return ActionResult(reward=Penalty.SCANNING_UNOPEN_PORT,
+            #                     outcome=None)
+            reward_list = [Penalty.SCANNING_UNOPEN_PORT, Penalty.SCANNING_UNOPEN_PORT, 0, 0]
+            return ActionResult(reward=reward_list, outcome=None)
+
         else:
             target_node_data: model.NodeInfo = self._environment.get_node(target_node_id)
 
             if target_node_data.status != model.MachineStatus.Running:
                 logger.info("target machine not in running state")
-                return ActionResult(reward=Penalty.MACHINE_NOT_RUNNING,
-                                    outcome=None)
+                # return ActionResult(reward=Penalty.MACHINE_NOT_RUNNING,
+                #                     outcome=None)
+                reward_list = [Penalty.MACHINE_NOT_RUNNING, Penalty.MACHINE_NOT_RUNNING, 0, 0]
+                return ActionResult(reward=reward_list, outcome=None)
 
             # check the credentials before connecting
             if not self._check_service_running_and_authorized(target_node_data, port_name, credential):
                 logger.info("invalid credentials supplied")
-                return ActionResult(reward=Penalty.WRONG_PASSWORD,
-                                    outcome=None)
+                # return ActionResult(reward=Penalty.WRONG_PASSWORD,
+                #                     outcome=None)
+                reward_list = [Penalty.WRONG_PASSWORD, Penalty.WRONG_PASSWORD, 0, 0]
+                return ActionResult(reward=reward_list, outcome=None)
+
 
             last_owned_at, is_already_owned = self.__mark_node_as_owned(target_node_id)
 
             if is_already_owned:
-                return ActionResult(reward=Penalty.REPEAT, outcome=model.LateralMove())
+                # return ActionResult(reward=Penalty.REPEAT, outcome=model.LateralMove())
+                reward_list = [Penalty.REPEAT, Penalty.REPEAT, 0, 0]
+                return ActionResult(reward=reward_list, outcome=model.LateralMove())
 
             if target_node_id not in self._discovered_nodes:
                 self._discovered_nodes[target_node_id] = NodeTrackingInformation()
@@ -574,9 +601,12 @@ class AgentActions:
             if target_node.owned_string:
                 logger.info("Owned message: " + target_node.owned_string)
 
-            return ActionResult(reward=float(target_node_data.value) if last_owned_at is None else 0.0,
+            # return ActionResult(reward=float(target_node_data.value) if last_owned_at is None else 0.0,
+            #                     outcome=model.LateralMove())
+            reward = float(target_node_data.value) if last_owned_at is None else 0.0
+            reward_list = [reward, 0, reward, 0]
+            return ActionResult(reward=reward_list,
                                 outcome=model.LateralMove())
-
     def _check_service_running_and_authorized(self,
                                               target_node_data: model.NodeInfo,
                                               port_name: model.PortName,
