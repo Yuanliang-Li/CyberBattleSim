@@ -137,7 +137,9 @@ def epsilon_greedy_search(
     render=True,
     render_last_episode_rewards_to: Optional[str] = None,
     verbosity: Verbosity = Verbosity.Normal,
-    plot_episodes_length=True
+    plot_episodes_length=True,
+    is_reward_selection = False,
+    reward_id = 0
 ) -> TrainedLearner:
     """Epsilon greedy search for CyberBattle gym environments
 
@@ -270,6 +272,15 @@ def epsilon_greedy_search(
             # Take the step
             logging.debug(f"gym_action={gym_action}, action_metadata={action_metadata}")
             observation, reward, done, info = wrapped_env.step(gym_action)
+
+            if type(reward) != 'list':
+                reward = [reward]
+            if not is_reward_selection:
+                reward_id = 0
+            if reward_id >= len(reward):
+                raise RuntimeError('reward_id >= len(reward)!')
+            else:
+                reward = reward[reward_id]
 
             action_type = 'exploit' if action_style == 'exploit' else 'explore'
             outcome = 'reward' if reward > 0 else 'noreward'
